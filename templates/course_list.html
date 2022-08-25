@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Список курсов{% endblock %}
+{% block body %}
+<div id="site_content">
+    <div id="content">
+        <div>
+            <a href="/create-course/?id={{id}}">Создать новый курс</a>
+        </div>
+        <div>
+            <h1>Список курсов для категории "{{name}}"</h1>
+            <table>
+                <thead>
+                    <tr><th>Курс</th><th>Копировать</th><th>Редактировать</th></tr>
+                </thead>
+                <tbody>
+                    {% for item in objects_list %}
+                    <tr>
+                        <td>
+                            {{item.name}}
+                        </td>
+                        <td>
+                            <a href="/copy-course/?id={{item.id}}">копировать</a>
+                        </td>
+                        <td>
+                            <a href="/edit-course/?id={{item.id}}">редактировать</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+	</div>
+</div>
+{% endblock %}

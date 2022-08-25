@@ -43,18 +43,18 @@ class Framework:
             request['data'] = data
             print(f'Нам пришёл post-запрос: {data}')
         if method == 'GET':
-            request_params = GetRequests().get_request_params(environ)
+            request_params = Framework.decode_value(GetRequests().get_request_params(environ))
             request['request_params'] = request_params
             print(f'Нам пришли GET-параметры: {request_params}')
 
         # отработка паттерна page controller
-        if_static = False
+        _static = False
         if path in self.routes_lst:
             view = self.routes_lst[path]
         elif path.startswith(static.STATIC_URL):
             path = path[len(static.STATIC_URL):len(path) - 1]
             view = ViewGetStatic(static.STATIC_FILES_DIR, path)
-            if_static = True
+            _static = True
         else:
             view = PageNotFound404()
 
@@ -64,7 +64,7 @@ class Framework:
 
         # запуск контроллера с передачей объекта request
         code, body = view(request)
-        body = body if if_static else body.encode('utf-8')
+        body = body if _static else body.encode('utf-8')
         start_response(code, [('Content-Type', self.get_content_type(path))])
         return [body]
 
@@ -72,7 +72,7 @@ class Framework:
     def get_content_type(file_path):
         file_name = path.basename(file_path).lower()  # styles.css
         extension = path.splitext(file_name)[1]  # .css
-        print(extension)
+        # print(extension)
         return CONTENT_TYPES.get(extension, "text/html")
 
     @staticmethod
