@@ -4,22 +4,40 @@
 <div id="site_content">
     <div id="content">
         <div>
-            <a href="/create-course/?id={{id}}">Создать новый курс</a>
-        </div>
-        <div>
-            <h1>Список курсов для категории "{{name}}"</h1>
+            <h1>Список подкатегорий для категории "{{category.name}}"</h1>
             <table>
                 <thead>
-                    <tr><th>Курс</th><th>Копировать</th><th>Редактировать</th></tr>
+                    <tr><th>Категория</th><th>Количество курсов</th></tr>
                 </thead>
                 <tbody>
-                    {% for item in objects_list %}
+                    {% for item in category.child_categories %}
                     <tr>
                         <td>
                             {{item.name}}
                         </td>
                         <td>
-                            <a href="/copy-course/?id={{item.id}}">копировать</a>
+                            <a href="/courses-list/?id={{item.id}}">Показать курсы ({{item.course_count()}})</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            <div><a href="/create-category/?id={{category.id}}">Создать новую подкатегорию</a><div>
+        </div>
+        <div>
+            <h1>Список курсов</h1>
+            <table>
+                <thead>
+                    <tr><th>Курс</th><th>Копировать</th><th>Редактировать</th></tr>
+                </thead>
+                <tbody>
+                    {% for item in category.courses %}
+                    <tr>
+                        <td>
+                            {{item.name}}
+                        </td>
+                        <td>
+                            <a href="/copy-course/?id={{item.id}}&cid={{category.id}}">копировать</a>
                         </td>
                         <td>
                             <a href="/edit-course/?id={{item.id}}">редактировать</a>
@@ -28,6 +46,7 @@
                     {% endfor %}
                 </tbody>
             </table>
+            </div><a href="/create-course/?id={{category.id}}">Создать новый курс</a></div>
         </div>
 	</div>
 </div>

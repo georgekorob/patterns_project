@@ -1,9 +1,12 @@
-from pumba_framework.main import Framework
+import views
+from patterns.structural_patterns import routes
+from pumba_framework.main import Framework, DebugApplication, FakeApplication
 from urls import fronts
-from views import routes
 from wsgiref.simple_server import make_server
 
 application = Framework(routes, fronts)
+# application = DebugApplication(routes, fronts)
+# application = FakeApplication(routes, fronts)
 port = 8001
 addr = ''
 

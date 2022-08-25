@@ -90,16 +90,19 @@ class Category:
     auto_id = 0
 
     def __init__(self, name, category):
+        self.child_categories = []
         self.id = Category.auto_id
         Category.auto_id += 1
         self.name = name
         self.category = category
+        if category:
+            category.child_categories.append(self)
         self.courses = []
 
     def course_count(self):
         result = len(self.courses)
-        if self.category:
-            result += self.category.course_count()
+        for category in self.child_categories:
+            result += category.course_count()
         return result
 
 
@@ -122,12 +125,22 @@ class Engine:
         for cat, cs in [('Programmers', ['Python', 'Java']),
                         ('Sport', ['Power', 'Run', 'Tennis', 'Soccer']),
                         ('Life Ballance', ['Time']),
-                        ('Spirit', [])]:
+                        ('Spirit', ['First course', 'Second course'])]:
             cat = self.create_category(cat)
             self.categories.append(cat)
             self.courses += [self.create_course('record',
                                                 '/site_link/',
                                                 c, cat) for c in cs]
+        last_category = self.categories[-1]
+        for cat, cs in [('first_sub_category', ['First course in first', 'Second course in first']),
+                        ('second_sub_category', ['First course in second', 'Second course in second'])]:
+            cat = self.create_category(cat, last_category)
+            self.courses += [self.create_course('record',
+                                                '/site_link/',
+                                                c, cat) for c in cs]
+        # all_categories = self.get_all_categories(self.categories)
+        # for cat in all_categories:
+        #     print(cat.name)
 
     @staticmethod
     def create_user(type_, *args, **kwargs):
@@ -138,11 +151,26 @@ class Engine:
         return Category(name, category)
 
     def find_category_by_id(self, id):
-        for item in self.categories:
-            print('item', item.id)
-            if item.id == id:
-                return item
+        category = self.find_in_all_category(self.categories, id)
+        if category:
+            return category
         raise Exception(f'Нет категории с id = {id}')
+
+    @classmethod
+    def find_in_all_category(cls, categories, id):
+        for category in categories:
+            print('category', category.id)
+            if category.id == id:
+                return category
+            category = cls.find_in_all_category(category.child_categories, id)
+            if category:
+                return category
+
+    def get_all_categories(self, categories):
+        cats = categories.copy()
+        for cat in categories:
+            cats += self.get_all_categories(cat.child_categories)
+        return cats
 
     def find_course_by_id(self, id):
         for item in self.courses:
