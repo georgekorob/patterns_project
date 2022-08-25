@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %}{% endblock %}</title>
+    <link href="/static/css/style.css" rel="stylesheet">
+</head>
+<body>
+    <div class="main">
+        {% block header %}{% include "inc-header.html" %}{% endblock %}
+        {% block body %}{% endblock %}
+        {% block footer %}{% include "inc-footer.html" %}{% endblock %}
+    </div>
+</body>
+</html>

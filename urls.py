@@ -1,5 +1,4 @@
 from datetime import date
-from views import *
 
 
 # front controller
@@ -18,8 +17,3 @@ def other_front(request):
 # что-то вроде middleware в django
 fronts = [secret_front, user_front, other_front]
 
-routes = {
-    '/': Index(),
-    '/about/': About(),
-    '/course/': Course(),
-}

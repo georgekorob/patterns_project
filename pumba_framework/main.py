@@ -1,17 +1,8 @@
 from quopri import decodestring
 from framework_requests import GetRequests, PostRequests
+from types_dict import CONTENT_TYPES
+import static_settings as static
 from os import path
-from pathlib import Path
-
-ROOT_DIR = Path(__file__).resolve().parent.parent
-STATIC_FILES_DIR = path.join(ROOT_DIR, 'staticfiles')
-STATIC_URL = '/static/'
-CONTENT_TYPES = {".png": "image/png",
-                 ".css": "text/css",
-                 ".htm": "text/html",
-                 ".html": "text/html",
-                 ".js": "text/javascript",
-                 ".json": "application/json"}
 
 
 class PageNotFound404:
@@ -60,9 +51,9 @@ class Framework:
         if_static = False
         if path in self.routes_lst:
             view = self.routes_lst[path]
-        elif path.startswith(STATIC_URL):
-            path = path[len(STATIC_URL):len(path) - 1]
-            view = ViewGetStatic(STATIC_FILES_DIR, path)
+        elif path.startswith(static.STATIC_URL):
+            path = path[len(static.STATIC_URL):len(path) - 1]
+            view = ViewGetStatic(static.STATIC_FILES_DIR, path)
             if_static = True
         else:
             view = PageNotFound404()
