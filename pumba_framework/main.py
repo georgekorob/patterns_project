@@ -1,10 +1,40 @@
+from quopri import decodestring
+from framework_requests import GetRequests, PostRequests
+from os import path
+from pathlib import Path
+
+ROOT_DIR = Path(__file__).resolve().parent.parent
+STATIC_FILES_DIR = path.join(ROOT_DIR, 'staticfiles')
+STATIC_URL = '/static/'
+CONTENT_TYPES = {".png": "image/png",
+                 ".css": "text/css",
+                 ".htm": "text/html",
+                 ".html": "text/html",
+                 ".js": "text/javascript",
+                 ".json": "application/json"}
+
+
 class PageNotFound404:
     def __call__(self, request):
         return '404 WHAT', '404 PAGE Not Found'
 
 
+class ViewGetStatic:
+    def __init__(self, static_dir, file_path):
+        self.static_dir = static_dir
+        self.file_path = file_path
+
+    def __call__(self, request):
+        path_to_file = path.join(self.static_dir, self.file_path)
+        with open(path_to_file, 'rb') as f:
+            file_content = f.read()
+        status_code = '200 OK'
+        return status_code, file_content
+
+
 class Framework:
     """Класс Framework - основа фреймворка"""
+
     def __init__(self, routes_obj, fronts_obj):
         self.routes_lst = routes_obj
         self.fronts_lst = fronts_obj
@@ -15,18 +45,50 @@ class Framework:
         if not path.endswith('/'):
             path = f'{path}/'
 
+        method = environ['REQUEST_METHOD']
+        request = {'method': method}
+        if method == 'POST':
+            data = Framework.decode_value(PostRequests().get_request_params(environ))
+            request['data'] = data
+            print(f'Нам пришёл post-запрос: {data}')
+        if method == 'GET':
+            request_params = GetRequests().get_request_params(environ)
+            request['request_params'] = request_params
+            print(f'Нам пришли GET-параметры: {request_params}')
+
         # отработка паттерна page controller
+        if_static = False
         if path in self.routes_lst:
             view = self.routes_lst[path]
+        elif path.startswith(STATIC_URL):
+            path = path[len(STATIC_URL):len(path) - 1]
+            view = ViewGetStatic(STATIC_FILES_DIR, path)
+            if_static = True
         else:
             view = PageNotFound404()
 
         # отработка паттерна front controller
-        request = {}
         for front in self.fronts_lst:
             front(request)
 
         # запуск контроллера с передачей объекта request
         code, body = view(request)
-        start_response(code, [('Content-Type', 'text/html')])
-        return [body.encode('utf-8')]
+        body = body if if_static else body.encode('utf-8')
+        start_response(code, [('Content-Type', self.get_content_type(path))])
+        return [body]
+
+    @staticmethod
+    def get_content_type(file_path):
+        file_name = path.basename(file_path).lower()  # styles.css
+        extension = path.splitext(file_name)[1]  # .css
+        print(extension)
+        return CONTENT_TYPES.get(extension, "text/html")
+
+    @staticmethod
+    def decode_value(data):
+        new_data = {}
+        for k, v in data.items():
+            val = bytes(v.replace('%', '=').replace("+", " "), 'UTF-8')
+            val_decode_str = decodestring(val).decode('UTF-8')
+            new_data[k] = val_decode_str
+        return new_data
