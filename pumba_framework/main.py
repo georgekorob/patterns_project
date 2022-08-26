@@ -1,5 +1,5 @@
 from quopri import decodestring
-from framework_requests import GetRequests, PostRequests
+from pumba_framework.framework_requests import GetRequests, PostRequests
 from os import path
 from pathlib import Path
 
