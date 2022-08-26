@@ -1,4 +1,3 @@
-from datetime import date
 from pumba_framework.templator import render
 from patterns.creational_patterns import Engine, Logger
 

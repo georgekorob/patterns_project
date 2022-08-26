@@ -1,4 +1,3 @@
-from copy import copy
 from quopri import decodestring
 
 
