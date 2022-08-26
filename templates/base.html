@@ -8,7 +8,25 @@
 <body>
     <div class="main">
         {% block header %}{% include "include/inc-header.html" %}{% endblock %}
-        {% block body %}{% endblock %}
+        <div id="site_content">
+            <div id="sidebar_container">
+                <div class="sidebar">
+                    <div class="sidebar_top"><h2>Учитесь у лучших</h2></div>
+                    <div class="sidebar_item">
+                        <div>
+                            <li><a href="/category-list/">Список существующих категорий</a></li>
+                            <li><a href="/student-list/">Список студентов</a></li>
+                            <li><a href="/create-student/">Создать студента</a></li>
+                            <li><a href="/add-student/">Добавить студента на курс</a></li>
+                        </div>
+                    </div>
+                    <div class="sidebar_base"></div>
+                </div>
+            </div>
+            <div id="content">
+                {% block body %}{% endblock %}
+	        </div>
+        </div>
         {% block footer %}{% include "include/inc-footer.html" %}{% endblock %}
     </div>
 </body>

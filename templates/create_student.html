@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Создание студента{% endblock %}
+{% block body %}
+    <div>
+        <h1>Создание студента</h1>
+        <form method="post">
+            <div class="form_settings">
+                <p><input type="text" name="first_name" placeholder="Имя"></p>
+                <p><input type="text" name="last_name" placeholder="Фамилия"></p>
+                <p style="padding-top: 15px"><span>&nbsp;</span><input class="submit" type="submit" value="Сохранить"></p>
+            </div>
+        </form>
+    </div>
+{% endblock %}

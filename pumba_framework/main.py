@@ -1,7 +1,7 @@
 from quopri import decodestring
-from framework_requests import GetRequests, PostRequests
-from types_dict import CONTENT_TYPES
-import static_settings as static
+from pumba_framework.framework_requests import GetRequests, PostRequests
+from pumba_framework.types_dict import CONTENT_TYPES
+import pumba_framework.static_settings as static
 from os import path
 
 

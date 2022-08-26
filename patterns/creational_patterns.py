@@ -1,5 +1,5 @@
-from copy import copy
 from quopri import decodestring
+from patterns.behavioral_patterns import ConsoleWriter, Subject
 
 
 class User:
@@ -22,6 +22,7 @@ class Student(User):
     """Студент"""
 
     def __init__(self, *args, **kwargs):
+        self.courses = []
         super().__init__(*args, **kwargs)
 
 
@@ -44,7 +45,7 @@ class UserFactory:
 # ссылки, а не новые
 
 
-class Course:
+class Course(Subject):
     """Курс"""
     auto_id = 0
 
@@ -54,6 +55,18 @@ class Course:
         self.name = name
         self.category = category
         self.category.courses.append(self)
+        self.students = []
+        super().__init__()
+
+    def __getitem__(self, item):
+        """Обращение к курсу как к массиву, получение студента."""
+        return self.students[item]
+
+    def add_student(self, student: Student):
+        self.students.append(student)
+        student.courses.append(self)
+        # Оповещение пользователей
+        self.notify()
 
     def clone(self):
         return Course(self.name, self.category)
@@ -99,6 +112,10 @@ class Category:
             category.child_categories.append(self)
         self.courses = []
 
+    def __getitem__(self, item):
+        """Обращение к категории как к массиву, получение курса."""
+        return self.courses[item]
+
     def course_count(self):
         result = len(self.courses)
         for category in self.child_categories:
@@ -109,14 +126,16 @@ class Category:
 class Engine:
     """Основной интерфейс проекта"""
 
-    def __init__(self):
+    def __init__(self, notifiers=None):
         self.teachers = []
         self.students = []
         self.categories = []
         self.courses = []
-        self.make_data()
+        if notifiers is None:
+            notifiers = []
+        self.make_data(notifiers)
 
-    def make_data(self):
+    def make_data(self, notifiers):
         for t in [('John', 'Wick'), ('Peter', 'Dinklage'),
                   ('Emilia', 'Clarke')]:
             self.teachers.append(self.create_user('teacher', *t))
@@ -128,9 +147,11 @@ class Engine:
                         ('Spirit', ['First course', 'Second course'])]:
             cat = self.create_category(cat)
             self.categories.append(cat)
-            self.courses += [self.create_course('record',
-                                                '/site_link/',
-                                                c, cat) for c in cs]
+            for c in cs:
+                course = self.create_course('record', '/site_link/', c, cat)
+                for n in notifiers:
+                    course.observers.append(n)
+                self.courses.append(course)
         last_category = self.categories[-1]
         for cat, cs in [('first_sub_category', ['First course in first', 'Second course in first']),
                         ('second_sub_category', ['First course in second', 'Second course in second'])]:
@@ -138,9 +159,8 @@ class Engine:
             self.courses += [self.create_course('record',
                                                 '/site_link/',
                                                 c, cat) for c in cs]
-        # all_categories = self.get_all_categories(self.categories)
-        # for cat in all_categories:
-        #     print(cat.name)
+        for c in self.categories[0]:
+            c.add_student(self.students[0])
 
     @staticmethod
     def create_user(type_, *args, **kwargs):
@@ -189,6 +209,12 @@ class Engine:
                 return item
         return None
 
+    def get_student(self, name) -> Student:
+        first_name, last_name = name.split(' ')
+        for item in self.students:
+            if item.first_name == first_name and item.last_name == last_name:
+                return item
+
     @staticmethod
     def decode_value(val):
         val_b = bytes(val.replace('%', '=').replace("+", " "), 'UTF-8')
@@ -219,9 +245,10 @@ class SingletonByName(type):
 class Logger(metaclass=SingletonByName):
     """Логгер"""
 
-    def __init__(self, name):
+    def __init__(self, name, writer=ConsoleWriter()):
         self.name = name
+        self.writer = writer
 
-    @staticmethod
-    def log(text):
-        print('log--->', text)
+    def log(self, text):
+        text = f'log---> {text}'
+        self.writer.write(text)
