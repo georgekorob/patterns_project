@@ -1,5 +1,4 @@
 from jinja2 import Environment, FileSystemLoader
-import os
 
 
 def render(template_name, folder='templates', static_url='/static/', **kwargs):
