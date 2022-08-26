@@ -1,29 +1,25 @@
 {% extends "base.html" %}
 {% block title %}Редактирование курса{% endblock %}
 {% block body %}
-<div id="site_content">
-    <div id="content">
-        <div>
-            <h1>Редактировать курс "{{course.name}}"</h1>
-            <form action="" method="post">
-                <div class="form_settings">
-                    <input type="text" name="id" style="visibility: hidden;" value="{{course.id}}">
-                    <p><span>Название курса:</span><input type="text" name="name" value="{{course.name}}"></p>
-                    <p><span>Место проведения:</span><input type="text" name="link" value="{{course.link}}"></p>
-                    <p><span>Категория:</span>
-                        <select name="category" id="category">
-                             {% for item in categories %}
-                                 <option
-                                     {% if item.id == course.category.id %} selected {% endif %}
-                                     value="{{item.id}}">{{item.name}}
-                                 </option>
-                             {% endfor %}
-                         </select>
-                    </p>
-                    <p style="padding-top: 15px"><span>&nbsp;</span><input class="submit" type="submit" value="Сохранить"></p>
-                </div>
-            </form>
-        </div>
-	</div>
-</div>
+    <div>
+        <h1>Редактировать курс "{{course.name}}"</h1>
+        <form action="" method="post">
+            <div class="form_settings">
+                <input type="text" name="id" style="visibility: hidden;" value="{{course.id}}">
+                <p><span>Название курса:</span><input type="text" name="name" value="{{course.name}}"></p>
+                <p><span>Место проведения:</span><input type="text" name="link" value="{{course.link}}"></p>
+                <p><span>Категория:</span>
+                    <select name="category" id="category">
+                         {% for item in categories %}
+                             <option
+                                 {% if item.id == course.category.id %} selected {% endif %}
+                                 value="{{item.id}}">{{item.name}}
+                             </option>
+                         {% endfor %}
+                     </select>
+                </p>
+                <p style="padding-top: 15px"><span>&nbsp;</span><input class="submit" type="submit" value="Сохранить"></p>
+            </div>
+        </form>
+    </div>
 {% endblock %}
