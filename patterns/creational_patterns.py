@@ -1,5 +1,6 @@
 from quopri import decodestring
 from patterns.behavioral_patterns import ConsoleWriter, Subject
+from architectural_system_pattern_unit_of_work import DomainObject
 
 
 class User:
@@ -18,7 +19,7 @@ class Teacher(User):
         super().__init__(*args, **kwargs)
 
 
-class Student(User):
+class Student(User, DomainObject):
     """Студент"""
 
     def __init__(self, *args, **kwargs):
