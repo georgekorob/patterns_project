@@ -1,10 +1,14 @@
-from patterns.creational_patterns import Engine, Logger
+from patterns.mappers import MapperRegistry
+from patterns.creational_patterns import Engine, Logger, Student, Course, Category
 from patterns.structural_patterns import route, Debug
 from pumba_framework.templator import render
 from patterns.behavioral_patterns import EmailNotifier, SmsNotifier, \
     TemplateView, ListView, CreateView, BaseSerializer
+from patterns.unit_of_work import UnitOfWork
 
 logger = Logger('main')
+UnitOfWork.new_current()
+UnitOfWork.get_current().set_mapper_registry(MapperRegistry)
 email_notifier = EmailNotifier()
 # sms_notifier = SmsNotifier()
 site = Engine([email_notifier])
@@ -35,7 +39,9 @@ class CoursesList(TemplateView):
 
     def get_context_data(self):
         try:
-            category = site.find_category_by_id(int(self.request['request_params']['id']))
+            category = MapperRegistry.get_mapper(Category).find_by_id(int(self.request['request_params']['id']))
+            category.courses = MapperRegistry.get_mapper(Category).get_related(category, Course, 'child')
+            category.child_categories = MapperRegistry.get_mapper(Category).get_related(category, Category, 'child')
             return {'category': category}
         except KeyError:
             return '200 OK', 'No courses have been added yet'
@@ -86,8 +92,8 @@ class EditCourse(CreateView):
             self.template_name = 'course_edit.html'
             try:
                 course_id = int(self.request['request_params']['id'])
-                course = site.find_course_by_id(course_id)
-                return {'categories': site.get_all_categories(site.categories),
+                course = MapperRegistry.get_mapper(Course).find_by_id(course_id)
+                return {'categories': MapperRegistry.get_mapper(Category).all(),
                         'course': course}
             except KeyError:
                 return '200 OK', 'No categories have been added yet'
@@ -97,8 +103,9 @@ class EditCourse(CreateView):
         link = data['link']
         course_id = int(data['id'])
         category_id = int(data['category'])
-        self.category = site.find_category_by_id(category_id)
-        course = site.find_course_by_id(course_id)
+        self.category = MapperRegistry.get_mapper(Category).find_by_id(category_id)
+        course = MapperRegistry.get_mapper(Course).find_by_id(course_id)
+        course.category
 
         old_category_id = course.category.id
         old_category = site.find_category_by_id(old_category_id)
@@ -120,7 +127,7 @@ class CreateCategory(CreateView):
         if self.request['method'] == 'POST':
             if self.category_id == -1:
                 self.template_name = 'category_list.html'
-                return {'objects_list': site.categories}
+                return {'objects_list': site.get_categories()}
             else:
                 self.template_name = 'course_list.html'
                 return {'category': self.category}
@@ -134,20 +141,25 @@ class CreateCategory(CreateView):
 
     def create_obj(self, data):
         name = site.decode_value(data['name'])
+        new_category = Category(name)
+        new_category.mark_new()
+        UnitOfWork.get_current().commit()
+        new_category = MapperRegistry.get_mapper(Category).all()[-1]
         self.category_id = int(data.get('id'))
-        if self.category_id == -1:
-            new_category = site.create_category(name, self.category)
-            site.categories.append(new_category)
-        else:
-            self.category = site.find_category_by_id(self.category_id)
-            site.create_category(name, self.category)
+        if self.category_id != -1:
+            self.category = MapperRegistry.get_mapper(Category).find_by_id(self.category_id)
+            MapperRegistry.get_mapper(Category).add_parent(new_category, self.category)
+            self.category.child_categories = MapperRegistry.get_mapper(Category).get_related(self.category, Category, 'child')
 
 
 @route('/category-list/')
 class CategoryList(ListView):
     """Список категорий"""
     template_name = 'category_list.html'
-    queryset = site.categories
+    # queryset = site.get_categories()
+
+    def get_queryset(self):
+        return [c for c in site.get_categories() if c.category is None]
 
 
 @route('/copy-course/')
@@ -161,14 +173,19 @@ class CopyCourse:
             id = int(request_params['id'])
             cid = int(request_params['cid'])
 
-            old_course = site.find_course_by_id(id)
-            category = site.find_category_by_id(cid)
+            old_course = MapperRegistry.get_mapper(Course).find_by_id(id)
+            category = MapperRegistry.get_mapper(Category).find_by_id(cid)
+
             if old_course:
                 new_name = f'copy_{old_course.name}'
-                new_course = old_course.clone()
-                new_course.name = new_name
-                # new_course.category.courses.append(new_course)
-                site.courses.append(new_course)
+                course = old_course.clone()
+                course.name = new_name
+                course.mark_new()
+                UnitOfWork.get_current().commit()
+                course = MapperRegistry.get_mapper(Course).all()[-1]
+                MapperRegistry.get_mapper(course).add_parent(course, category)
+
+            category.courses = MapperRegistry.get_mapper(Category).get_related(category, Course, 'child')
 
             return '200 OK', render('course_list.html', category=category)
         except KeyError:
@@ -180,6 +197,12 @@ class StudentListView(ListView):
     queryset = site.students
     template_name = 'student_list.html'
 
+    def get_queryset(self):
+        students = MapperRegistry.get_mapper(Student).all()
+        for student in students:
+            student.courses = MapperRegistry.get_mapper(Student).get_related(student, Course, 'parent')
+        return students
+
 
 @route('/create-student/')
 class StudentCreateView(CreateView):
@@ -188,8 +211,9 @@ class StudentCreateView(CreateView):
     def create_obj(self, data: dict):
         first_name = site.decode_value(data['first_name'])
         last_name = site.decode_value(data['last_name'])
-        new_obj = site.create_user('student', first_name, last_name)
-        site.students.append(new_obj)
+        user = site.create_user('student', first_name, last_name)
+        user.mark_new()
+        UnitOfWork.get_current().commit()
 
 
 @route('/add-student/')
@@ -198,18 +222,14 @@ class AddStudentByCourseCreateView(CreateView):
 
     def get_context_data(self):
         context = super().get_context_data()
-        context['courses'] = site.courses
-        context['students'] = site.students
+        context['courses'] = MapperRegistry.get_mapper(Course).all()
+        context['students'] = MapperRegistry.get_mapper(Student).all()
         return context
 
     def create_obj(self, data: dict):
-        course_name = data['course_name']
-        course_name = site.decode_value(course_name)
-        course = site.get_course(course_name)
-        student_name = data['student_name']
-        student_name = site.decode_value(student_name)
-        student = site.get_student(student_name)
-        course.add_student(student)
+        course = MapperRegistry.get_mapper(Course).find_by_id(int(data['course_id']))
+        student = MapperRegistry.get_mapper(Student).find_by_id(int(data['student_id']))
+        MapperRegistry.get_mapper(student).add_parent(student, course)
 
 
 @route('/api/')

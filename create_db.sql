@@ -1,0 +1,35 @@
+
+PRAGMA foreign_keys = off;
+BEGIN TRANSACTION;
+
+DROP TABLE IF EXISTS student;
+DROP TABLE IF EXISTS teacher;
+DROP TABLE IF EXISTS category;
+DROP TABLE IF EXISTS course;
+DROP TABLE IF EXISTS course_category;
+DROP TABLE IF EXISTS category_category;
+DROP TABLE IF EXISTS student_course;
+DROP TABLE IF EXISTS teacher_course;
+
+CREATE TABLE student (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL UNIQUE, first_name VARCHAR (32), last_name VARCHAR (32));
+
+CREATE TABLE teacher (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL UNIQUE, first_name VARCHAR (32), last_name VARCHAR (32));
+
+CREATE TABLE category (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL UNIQUE, name VARCHAR (32));
+
+CREATE TABLE course (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL UNIQUE, name VARCHAR (32));
+
+CREATE TABLE course_category (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL UNIQUE,
+course_id INTEGER REFERENCES course(course_id), category_pid INTEGER REFERENCES category(category_parent_id));
+
+CREATE TABLE category_category (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL UNIQUE,
+category_id INTEGER REFERENCES category(category_id), category_pid INTEGER REFERENCES category(category_parent_id));
+
+CREATE TABLE student_course (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL UNIQUE,
+student_id INTEGER REFERENCES student(student_id), course_pid INTEGER REFERENCES course(course_id));
+
+CREATE TABLE teacher_course (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL UNIQUE,
+teacher_id INTEGER REFERENCES teacher(teacher_id), course_pid INTEGER REFERENCES course(course_id));
+
+COMMIT TRANSACTION;
+PRAGMA foreign_keys = on;

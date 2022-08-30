@@ -5,15 +5,15 @@
     <form method="post">
         <div class="form_settings">
             <p><span>Курс:</span>
-            <select size="5" name="course_name">
+            <select size="5" name="course_id">
                 {% for item in courses %}
-                    <option value="{{item.name}}">{{item.name}}</option>
+                    <option value="{{item.id}}">{{item.name}}</option>
                 {% endfor %}
             </select></p>
             <p><span>Студент:</span>
-            <select size="5" name="student_name">
+            <select size="5" name="student_id">
                 {% for item in students %}
-                    <option value="{{item.first_name}} {{item.last_name}}">
+                    <option value="{{item.id}}">
                         {{item.first_name}} {{item.last_name}}
                     </option>
                 {% endfor %}

@@ -2,7 +2,8 @@ import threading
 
 
 class UnitOfWork:
-    """UNIT OF WORK - архитектурный системный паттерн"""
+    """architectural_system_pattern
+    UNIT OF WORK - архитектурный системный паттерн"""
     current = threading.local()
 
     def __init__(self):
@@ -59,6 +60,11 @@ class UnitOfWork:
 
 
 class DomainObject:
+    fields = ('name',)
+
+    def get_from_fields(self):
+        return tuple(self.__getattribute__(f) for f in self.fields)
+
     def mark_new(self):
         UnitOfWork.get_current().register_new(self)
 

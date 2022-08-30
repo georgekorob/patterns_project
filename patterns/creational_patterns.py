@@ -1,15 +1,17 @@
 from quopri import decodestring
+from patterns.mappers import MapperRegistry
 from patterns.behavioral_patterns import ConsoleWriter, Subject
-from architectural_system_pattern_unit_of_work import DomainObject
+from patterns.unit_of_work import DomainObject, UnitOfWork
 
 
-class User:
+class User(DomainObject):
     """Абстрактный пользователь"""
+    fields = 'first_name', 'last_name'
 
     def __init__(self, first_name, last_name):
         self.first_name = first_name
         self.last_name = last_name
-        self.birthday = None
+        self.courses = []
 
 
 class Teacher(User):
@@ -19,11 +21,10 @@ class Teacher(User):
         super().__init__(*args, **kwargs)
 
 
-class Student(User, DomainObject):
+class Student(User):
     """Студент"""
 
     def __init__(self, *args, **kwargs):
-        self.courses = []
         super().__init__(*args, **kwargs)
 
 
@@ -46,16 +47,18 @@ class UserFactory:
 # ссылки, а не новые
 
 
-class Course(Subject):
+class Course(Subject, DomainObject):
     """Курс"""
-    auto_id = 0
+    # auto_id = 0
 
-    def __init__(self, name, category):
-        self.id = Course.auto_id
-        Course.auto_id += 1
+    def __init__(self, name, type='record', link='/site_link/'):
+        # self.id = Course.auto_id
+        # Course.auto_id += 1
         self.name = name
-        self.category = category
-        self.category.courses.append(self)
+        self.link = link
+        self.type = type
+        # self.category = category
+        # self.category.courses.append(self)
         self.students = []
         super().__init__()
 
@@ -70,47 +73,21 @@ class Course(Subject):
         self.notify()
 
     def clone(self):
-        return Course(self.name, self.category)
+        return Course(self.name, self.type, self.link)
 
 
-class InteractiveCourse(Course):
-    """Интерактивный курс"""
-    def __init__(self, addr, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.addr = addr
-
-
-class RecordCourse(Course):
-    """Курс в записи"""
-    def __init__(self, link, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.link = link
-
-
-class CourseFactory:
-    types = {
-        'interactive': InteractiveCourse,
-        'record': RecordCourse
-    }
-
-    @classmethod
-    def create(cls, type_, addr, name, category):
-        """Фабричный метод - порождающий паттерн"""
-        return cls.types[type_](addr, name, category)
-
-
-class Category:
+class Category(DomainObject):
     """Категория"""
-    auto_id = 0
+    # auto_id = 0
 
-    def __init__(self, name, category):
+    def __init__(self, name):
         self.child_categories = []
-        self.id = Category.auto_id
-        Category.auto_id += 1
+        # self.id = Category.auto_id
+        # Category.auto_id += 1
         self.name = name
-        self.category = category
-        if category:
-            category.child_categories.append(self)
+        self.category = None
+        # if category:
+        #     category.child_categories.append(self)
         self.courses = []
 
     def __getitem__(self, item):
@@ -136,40 +113,74 @@ class Engine:
             notifiers = []
         self.make_data(notifiers)
 
-    def make_data(self, notifiers):
-        for t in [('John', 'Wick'), ('Peter', 'Dinklage'),
-                  ('Emilia', 'Clarke')]:
-            self.teachers.append(self.create_user('teacher', *t))
-        for s in [('Angela', 'Moss'), ('Jill', 'Lawson'), ('Steve', 'Ray')]:
-            self.students.append(self.create_user('student', *s))
-        for cat, cs in [('Programmers', ['Python', 'Java']),
-                        ('Sport', ['Power', 'Run', 'Tennis', 'Soccer']),
-                        ('Life Ballance', ['Time']),
-                        ('Spirit', ['First course', 'Second course'])]:
-            cat = self.create_category(cat)
-            self.categories.append(cat)
-            for c in cs:
-                course = self.create_course('record', '/site_link/', c, cat)
-                for n in notifiers:
-                    course.observers.append(n)
-                self.courses.append(course)
-        last_category = self.categories[-1]
-        for cat, cs in [('first_sub_category', ['First course in first', 'Second course in first']),
-                        ('second_sub_category', ['First course in second', 'Second course in second'])]:
-            cat = self.create_category(cat, last_category)
-            self.courses += [self.create_course('record',
-                                                '/site_link/',
-                                                c, cat) for c in cs]
-        for c in self.categories[0]:
-            c.add_student(self.students[0])
+    def make_data(self, notifiers, fill=False):
+        if fill:
+            teachers = [('John', 'Wick'), ('Peter', 'Dinklage'), ('Emilia', 'Clarke')]
+            students = [('Angela', 'Moss'), ('Jill', 'Lawson'), ('Steve', 'Ray')]
+            categories_and_courses = [('Programmers', ['Python', 'Java']),
+                                      ('Sport', ['Power', 'Run', 'Tennis', 'Soccer']),
+                                      ('Life Ballance', ['Time']),
+                                      ('Spirit', ['First course', 'Second course'])]
+            for t in teachers:
+                self.teachers.append(self.create_user('teacher', *t))
+                self.teachers[-1].mark_new()
+            for s in students:
+                self.students.append(self.create_user('student', *s))
+                self.students[-1].mark_new()
+            for cat, cs in categories_and_courses:
+                self.create_category(cat)
+                for c in cs:
+                    self.create_course(c)
+            UnitOfWork.get_current().commit()
+        self.students = MapperRegistry.get_mapper(Student).all()
+        self.courses = MapperRegistry.get_mapper(Course).all()
+        self.categories = MapperRegistry.get_mapper(Category).all()
+        if fill:
+            for cat, cs in categories_and_courses:
+                for category in self.categories:
+                    if category.name == cat:
+                        for c in cs:
+                            for course in self.courses:
+                                if course.name == c:
+                                    MapperRegistry.get_mapper(course).add_parent(course, category)
+                                    break
+        for category in self.categories:
+            category.courses = MapperRegistry.get_mapper(Category).get_related(category, Course, 'child')
+        if fill:
+            for course in self.categories[0]:
+                course.add_student(self.students[0])
+                MapperRegistry.get_mapper(self.students[0]).add_parent(self.students[0], course)
+        for course in self.courses:
+            course.students = MapperRegistry.get_mapper(Course).get_related(course, Student,  'child')
+        for course in self.courses:
+            for n in notifiers:
+                course.observers.append(n)
 
-    @staticmethod
-    def create_user(type_, *args, **kwargs):
+    def get_categories(self):
+        categories = MapperRegistry.get_mapper(Category).all()
+        for category in categories:
+            category.courses = MapperRegistry.get_mapper(Category).get_related(category, Course, 'child')
+            category.child_categories = MapperRegistry.get_mapper(Category).get_related(category, Category, 'child')
+            for cat in category.child_categories:
+                for c in categories:
+                    if c.id == cat.id:
+                        c.category = category
+        return categories
+
+    def create_user(self, type_, *args, **kwargs):
         return UserFactory.create(type_, *args, **kwargs)
 
-    @staticmethod
-    def create_category(name, category=None):
-        return Category(name, category)
+    def create_category(self, name, *args, **kwargs):
+        category = Category(name, *args, **kwargs)
+        self.categories.append(category)
+        category.mark_new()
+        return category
+
+    def create_course(self, type_, *args, **kwargs):
+        course = Course(type_, *args, **kwargs)
+        self.courses.append(course)
+        course.mark_new()
+        return course
 
     def find_category_by_id(self, id):
         category = self.find_in_all_category(self.categories, id)
@@ -199,10 +210,6 @@ class Engine:
             if item.id == id:
                 return item
         raise Exception(f'Нет курса с id = {id}')
-
-    @staticmethod
-    def create_course(type_, addr, name, category):
-        return CourseFactory.create(type_, addr, name, category)
 
     def get_course(self, name):
         for item in self.courses:
