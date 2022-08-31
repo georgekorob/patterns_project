@@ -20,10 +20,10 @@ CREATE TABLE category (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL UNIQUE, nam
 CREATE TABLE course (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL UNIQUE, name VARCHAR (32));
 
 CREATE TABLE course_category (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL UNIQUE,
-course_id INTEGER REFERENCES course(course_id), category_pid INTEGER REFERENCES category(category_parent_id));
+course_id INTEGER REFERENCES course(course_id), category_pid INTEGER REFERENCES category(category_id));
 
 CREATE TABLE category_category (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL UNIQUE,
-category_id INTEGER REFERENCES category(category_id), category_pid INTEGER REFERENCES category(category_parent_id));
+category_id INTEGER REFERENCES category(category_id), category_pid INTEGER REFERENCES category(category_id));
 
 CREATE TABLE student_course (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL UNIQUE,
 student_id INTEGER REFERENCES student(student_id), course_pid INTEGER REFERENCES course(course_id));

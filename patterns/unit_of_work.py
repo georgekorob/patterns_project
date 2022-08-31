@@ -61,9 +61,13 @@ class UnitOfWork:
 
 class DomainObject:
     fields = ('name',)
+    tablename = ''
 
     def get_from_fields(self):
-        return tuple(self.__getattribute__(f) for f in self.fields)
+        try:
+            return tuple(self.__getattribute__(f) for f in self.fields)
+        except:
+            return (self.cid, self.pid)
 
     def mark_new(self):
         UnitOfWork.get_current().register_new(self)
