@@ -104,7 +104,6 @@ connection = sqlite3.connect('patterns.sqlite')
 class MapperRegistry:
     """Data Mapper - архитектурный системный паттерн"""
     mappers = {}
-    # mappers_relation = {}
 
     @staticmethod
     def get_mapper(obj):
@@ -114,13 +113,3 @@ class MapperRegistry:
         except Exception:
             MapperRegistry.mappers[name] = Mapper
             return MapperRegistry.mappers[name](connection, obj)
-        # elif len(obj) == 2:
-        #     class1, class2 = [q if inspect.isclass(q) else q for q in obj]
-        #     name = f'{class1.__name__.lower()}_{class2.__name__.lower()}'
-        #     try:
-        #         return MapperRegistry.mappers_relation[name](connection, *obj)
-        #     except Exception:
-        #         MapperRegistry.mappers_relation[name] = MapperRelation
-        #         return MapperRegistry.mappers_relation[name](connection, *obj)
-        # else:
-        #     raise Exception("Неверное количество аргументов")
